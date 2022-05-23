@@ -3,8 +3,11 @@ module github.com/assimon/luuu
 go 1.16
 
 require (
+	github.com/admpub/fsnotify v1.5.0 // indirect
+	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.7.0
+	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/golang-module/carbon/v2 v2.0.1
 	github.com/gookit/color v1.5.0
 	github.com/gookit/goutil v0.4.6
@@ -18,6 +21,7 @@ require (
 	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.9.0
+	github.com/webx-top/com v0.5.0
 	go.uber.org/zap v1.17.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/telebot.v3 v3.0.0
