@@ -142,11 +142,9 @@
       订单编号：{{.TradeId}}
     </div>
     <div class="gray-text">当前USDT支付区块网络协议为TRC20</div>
-    <div class="red-text">！!到账金额需要与下方显示的金额一致，否则系統无法确认！！</div>
-    <div class="red-text">尝试点击钱包地址或金额可直接复制👇</div>
     <div class="qr-code-container">
       <h2>
-        <small>付款金额</small>
+        <small>到账金额</small>
         <span id="copy-amount" data-clipboard-text="{{.ActualAmount}}">{{.ActualAmount}}</span>
         <small>USDT(TRC20)</small>
       </h2>
@@ -171,6 +169,8 @@
         </div>
       </div>
     </div>
+    <div class="red-text">到账金额需要与下方显示的金额一致，否则系統无法确认</div>
+    <div class="gray-text">尝试点击钱包地址或金额可直接复制</div>
   </div>
   </div>
 </body>
