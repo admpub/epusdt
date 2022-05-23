@@ -125,7 +125,11 @@
       flex: 1;
       text-align: center;
     }
-
+    #copy-amount {
+      font-size: 35px;
+      padding:10px 0 !important;
+      display:block
+    }
   </style>
 </head>
 
@@ -141,8 +145,11 @@
     <div class="red-text">！!到账金额需要与下方显示的金额一致，否则系統无法确认！！</div>
     <div class="red-text">尝试点击钱包地址或金额可直接复制👇</div>
     <div class="qr-code-container">
-      <h2><span id="copy-amount" data-clipboard-text="{{.ActualAmount}}">{{.ActualAmount}}</span>
-             <small>USDT</small></h2>
+      <h2>
+        <small>付款金额</small>
+        <span id="copy-amount" data-clipboard-text="{{.ActualAmount}}">{{.ActualAmount}}</span>
+        <small>USDT(TRC20)</small>
+      </h2>
       <p class="address-text" id="copy-token" data-clipboard-text="{{.Token}}">
         {{.Token}}
       </p>
