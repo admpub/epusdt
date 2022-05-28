@@ -55,14 +55,7 @@ func OrderSuccessWithTransaction(tx *gorm.DB, req *request.OrderProcessingReques
 
 // OrderReuseWithTransaction 复用以过期订单
 func OrderReuseWithTransaction(tx *gorm.DB, tradeId string, update map[string]interface{}) error {
-	data := map[string]interface{}{
-		"status":           mdb.StatusWaitPay,
-		"callback_confirm": mdb.CallBackConfirmNo,
-	}
-	for k, v := range update {
-		data[k] = v
-	}
-	err := tx.Model(&mdb.Orders{}).Where("trade_id = ?", tradeId).Updates(data).Error
+	err := tx.Model(&mdb.Orders{}).Where("trade_id = ?", tradeId).Updates(update).Error
 	return err
 }
 

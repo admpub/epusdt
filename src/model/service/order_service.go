@@ -80,13 +80,19 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 			exist.NotifyUrl = req.NotifyUrl
 			exist.RedirectUrl = req.RedirectUrl
 			exist.CreatedAt = carbon.Time{Carbon: carbon.Now()}
+			exist.Status = mdb.StatusWaitPay
+			exist.CallbackNum = 0
+			exist.CallBackConfirm = mdb.CallBackConfirmNo
 			err = data.OrderReuseWithTransaction(tx, exist.TradeId, map[string]interface{}{
-				`amount`:        exist.Amount,
-				`actual_amount`: exist.ActualAmount,
-				`token`:         exist.Token,
-				`notify_url`:    exist.NotifyUrl,
-				`redirect_url`:  exist.RedirectUrl,
-				`created_at`:    exist.CreatedAt,
+				`amount`:           exist.Amount,
+				`actual_amount`:    exist.ActualAmount,
+				`token`:            exist.Token,
+				`notify_url`:       exist.NotifyUrl,
+				`redirect_url`:     exist.RedirectUrl,
+				`created_at`:       exist.CreatedAt,
+				"status":           exist.Status,
+				"callback_num":     exist.CallbackNum,
+				"callback_confirm": exist.CallBackConfirm,
 			})
 			if err != nil {
 				tx.Rollback()
