@@ -2,11 +2,12 @@ package sign
 
 import (
 	"errors"
-	"github.com/assimon/luuu/util/json"
-	"github.com/gookit/goutil/strutil"
 	"reflect"
 	"sort"
 	"strconv"
+
+	"github.com/assimon/luuu/util/json"
+	"github.com/gookit/goutil/strutil"
 )
 
 // Get 获取签名

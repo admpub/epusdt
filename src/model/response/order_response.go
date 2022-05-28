@@ -13,12 +13,21 @@ type CreateTransactionResponse struct {
 
 // OrderNotifyResponse 订单异步回调结构体
 type OrderNotifyResponse struct {
-	TradeId            string  `json:"trade_id"`             //  epusdt订单号
-	OrderId            string  `json:"order_id"`             //  客户交易id
-	Amount             float64 `json:"amount"`               //  订单金额，保留4位小数
-	ActualAmount       float64 `json:"actual_amount"`        //  订单实际需要支付的金额，保留4位小数
-	Token              string  `json:"token"`                //  收款钱包地址
+	TradeId            string  `json:"trade_id"`             // epusdt订单号
+	OrderId            string  `json:"order_id"`             // 客户交易id
+	Amount             float64 `json:"amount"`               // 订单金额，保留4位小数
+	ActualAmount       float64 `json:"actual_amount"`        // 订单实际需要支付的金额，保留4位小数
+	Token              string  `json:"token"`                // 收款钱包地址
 	BlockTransactionId string  `json:"block_transaction_id"` // 区块id
 	Signature          string  `json:"signature"`            // 签名
-	Status             int     `json:"status"`               //  1：等待支付，2：支付成功，3：已过期
+	Status             int     `json:"status"`               // 1：等待支付，2：支付成功，3：已过期
+}
+
+type QueryTransactionResponse struct {
+	TradeId        string  `json:"trade_id"`        // epusdt订单号
+	Status         int     `json:"status"`          // 状态
+	Currency       string  `json:"currency"`        // 支付币种
+	Amount         float64 `json:"amount"`          // 订单金额，保留4位小数
+	ActualCurrency string  `json:"actual_currency"` // 实付币种
+	ActualAmount   float64 `json:"actual_amount"`   // 订单实际需要支付的金额，保留4位小数
 }

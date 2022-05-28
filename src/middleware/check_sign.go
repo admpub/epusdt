@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"bytes"
+	"io/ioutil"
+
 	"github.com/assimon/luuu/config"
 	"github.com/assimon/luuu/util/constant"
 	"github.com/assimon/luuu/util/json"
 	"github.com/assimon/luuu/util/sign"
 	"github.com/labstack/echo/v4"
-	"io/ioutil"
 )
 
 func CheckApiSign() echo.MiddlewareFunc {
@@ -19,6 +20,9 @@ func CheckApiSign() echo.MiddlewareFunc {
 			}
 			m := make(map[string]interface{})
 			err = json.Cjson.Unmarshal(params, &m)
+			if err != nil {
+				return err
+			}
 			signature, ok := m["signature"]
 			if !ok {
 				return constant.SignatureErr

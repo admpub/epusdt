@@ -27,3 +27,8 @@ type OrderProcessingRequest struct {
 	TradeId            string
 	BlockTransactionId string
 }
+
+type QueryTransactionRequest struct {
+	TradeId   string `json:"trade_id" validate:"required|maxLen:32"`
+	Signature string `json:"signature"  validate:"required"`
+}

@@ -1,10 +1,11 @@
 package route
 
 import (
+	"net/http"
+
 	"github.com/assimon/luuu/controller/comm"
 	"github.com/assimon/luuu/middleware"
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 // RegisterRoute 路由注册
@@ -24,4 +25,5 @@ func RegisterRoute(e *echo.Echo) {
 	orderRoute := apiV1Route.Group("/order", middleware.CheckApiSign())
 	// 创建订单
 	orderRoute.POST("/create-transaction", comm.Ctrl.CreateTransaction)
+	orderRoute.POST("/query-transaction", comm.Ctrl.QueryTransaction)
 }
