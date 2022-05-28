@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Epusdt - 优雅的usdt支付中间件</title>
   <link rel="stylesheet" href="/static/reset.css">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -20,6 +20,7 @@
     </div>
     <div class="gray-text">当前USDT支付区块网络协议为TRC20</div>
     <div class="qr-code-container">
+      <div class="amount-tips bubble-box arrow-down">到账金额必须与下方显示的金额一致，否则系统无法确认</div>
       <h2>
         <small>到账金额</small>
         <span id="copy-amount" data-clipboard-text="{{.ActualAmount}}">{{.ActualAmount}}</span>
@@ -46,7 +47,7 @@
         </div>
       </div>
     </div>
-    <div class="red-text">到账金额需要与上方显示的金额一致，否则系统无法确认</div>
+    <div class="red-text">请务必在倒计时结束前完成支付</div>
     <div class="gray-text">尝试点击钱包地址或金额可直接复制</div>
   </div>
   </div>
