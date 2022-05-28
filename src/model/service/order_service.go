@@ -2,6 +2,10 @@ package service
 
 import (
 	"fmt"
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/assimon/luuu/config"
 	"github.com/assimon/luuu/model/dao"
 	"github.com/assimon/luuu/model/data"
@@ -12,12 +16,8 @@ import (
 	"github.com/assimon/luuu/mq/handle"
 	"github.com/assimon/luuu/util/constant"
 	"github.com/assimon/luuu/util/math"
-	"github.com/golang-module/carbon/v2"
 	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
-	"math/rand"
-	"sync"
-	"time"
 )
 
 const (
@@ -52,7 +52,8 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 		return nil, err
 	}
 	if exist.ID > 0 {
-		return nil, constant.OrderAlreadyExists
+		return respCreateTransaction(exist), nil
+		//return nil, constant.OrderAlreadyExists
 	}
 	// 有无可用钱包
 	walletAddress, err := data.GetAvailableWalletAddress()
@@ -96,17 +97,20 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 	// 超时过期消息队列
 	orderExpirationQueue, _ := handle.NewOrderExpirationQueue(order.TradeId)
 	mq.MClient.Enqueue(orderExpirationQueue, asynq.ProcessIn(config.GetOrderExpirationTimeDuration()))
-	ExpirationTime := carbon.Now().AddMinutes(config.GetOrderExpirationTime()).Timestamp()
-	resp := &response.CreateTransactionResponse{
+	return respCreateTransaction(order), nil
+}
+
+func respCreateTransaction(order *mdb.Orders) *response.CreateTransactionResponse {
+	expirationTime := order.CreatedAt.AddMinutes(config.GetOrderExpirationTime()).Timestamp()
+	return &response.CreateTransactionResponse{
 		TradeId:        order.TradeId,
 		OrderId:        order.OrderId,
 		Amount:         order.Amount,
 		ActualAmount:   order.ActualAmount,
 		Token:          order.Token,
-		ExpirationTime: ExpirationTime,
+		ExpirationTime: expirationTime,
 		PaymentUrl:     fmt.Sprintf("%s/pay/checkout-counter/%s", config.GetAppUri(), order.TradeId),
 	}
-	return resp, nil
 }
 
 // OrderProcessing 成功处理订单
