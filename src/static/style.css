@@ -120,10 +120,6 @@
   padding:10px 0 !important;
   display:block
 }
-.amount-tips{
-    position:absolute;margin-top:-15px;margin-left:-12px;
-    color: #f00;font-size: 12px;
-}
 .bubble-box {
     position: relative;border: 1px solid orange;border-radius: 3px;
     font-size:12px;line-height:25px;padding:0 5px;height:25px;
@@ -160,4 +156,8 @@
     left: 50%;
     margin-left: 1px;
     border-top-color: #fff;
+}
+.amount-tips{
+    position:absolute;margin-top:-15px;margin-left:-12px;
+    color: #f00;font-size: 12px;
 }
