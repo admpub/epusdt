@@ -16,6 +16,7 @@ import (
 	"github.com/assimon/luuu/mq/handle"
 	"github.com/assimon/luuu/util/constant"
 	"github.com/assimon/luuu/util/math"
+	"github.com/golang-module/carbon/v2"
 	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
 )
@@ -78,12 +79,14 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 			exist.Token = availableToken
 			exist.NotifyUrl = req.NotifyUrl
 			exist.RedirectUrl = req.RedirectUrl
+			exist.CreatedAt = carbon.Time{Carbon: carbon.Now()}
 			err = data.OrderReuseWithTransaction(tx, exist.TradeId, map[string]interface{}{
 				`amount`:        exist.Amount,
 				`actual_amount`: exist.ActualAmount,
 				`token`:         exist.Token,
 				`notify_url`:    exist.NotifyUrl,
 				`redirect_url`:  exist.RedirectUrl,
+				`created_at`:    exist.CreatedAt,
 			})
 			if err != nil {
 				tx.Rollback()
