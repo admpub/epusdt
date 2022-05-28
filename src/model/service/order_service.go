@@ -52,8 +52,57 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 		return nil, err
 	}
 	if exist.ID > 0 {
-		return respCreateTransaction(exist), nil
-		//return nil, constant.OrderAlreadyExists
+		switch exist.Status {
+		case mdb.StatusWaitPay:
+			return respCreateTransaction(exist), nil
+		case mdb.StatusExpired:
+			// 有无可用钱包
+			walletAddress, err := data.GetAvailableWalletAddress()
+			if err != nil {
+				return nil, err
+			}
+			if len(walletAddress) <= 0 {
+				return nil, constant.NotAvailableWalletAddress
+			}
+			amount := math.MustParsePrecFloat64(decimalUsdt.InexactFloat64(), 3)
+			availableToken, availableAmount, err := CalculateAvailableWalletAndAmount(amount, walletAddress)
+			if err != nil {
+				return nil, err
+			}
+			if availableToken == "" {
+				return nil, constant.NotAvailableAmountErr
+			}
+			tx := dao.Mdb.Begin()
+			exist.Amount = req.Amount
+			exist.ActualAmount = availableAmount
+			exist.Token = availableToken
+			exist.NotifyUrl = req.NotifyUrl
+			exist.RedirectUrl = req.RedirectUrl
+			err = data.OrderReuseWithTransaction(tx, exist.TradeId, map[string]interface{}{
+				`amount`:        exist.Amount,
+				`actual_amount`: exist.ActualAmount,
+				`token`:         exist.Token,
+				`notify_url`:    exist.NotifyUrl,
+				`redirect_url`:  exist.RedirectUrl,
+			})
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			// 锁定支付池
+			err = data.LockTransaction(availableToken, exist.TradeId, availableAmount, config.GetOrderExpirationTimeDuration())
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			tx.Commit()
+			// 超时过期消息队列
+			orderExpirationQueue, _ := handle.NewOrderExpirationQueue(exist.TradeId)
+			mq.MClient.Enqueue(orderExpirationQueue, asynq.ProcessIn(config.GetOrderExpirationTimeDuration()))
+			return respCreateTransaction(exist), nil
+		default:
+			return nil, constant.OrderAlreadyExists
+		}
 	}
 	// 有无可用钱包
 	walletAddress, err := data.GetAvailableWalletAddress()

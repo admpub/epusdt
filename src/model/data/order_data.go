@@ -3,12 +3,13 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/assimon/luuu/model/dao"
 	"github.com/assimon/luuu/model/mdb"
 	"github.com/assimon/luuu/model/request"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
-	"time"
 )
 
 var (
@@ -49,6 +50,19 @@ func OrderSuccessWithTransaction(tx *gorm.DB, req *request.OrderProcessingReques
 		"status":               mdb.StatusPaySuccess,
 		"callback_confirm":     mdb.CallBackConfirmNo,
 	}).Error
+	return err
+}
+
+// OrderReuseWithTransaction 复用以过期订单
+func OrderReuseWithTransaction(tx *gorm.DB, tradeId string, update map[string]interface{}) error {
+	data := map[string]interface{}{
+		"status":           mdb.StatusWaitPay,
+		"callback_confirm": mdb.CallBackConfirmNo,
+	}
+	for k, v := range update {
+		data[k] = v
+	}
+	err := tx.Model(&mdb.Orders{}).Where("trade_id = ?", tradeId).Updates(data).Error
 	return err
 }
 
