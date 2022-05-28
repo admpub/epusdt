@@ -2,11 +2,11 @@ package response
 
 // CreateTransactionResponse 创建订单成功返回
 type CreateTransactionResponse struct {
-	TradeId        string  `json:"trade_id"`        //  epusdt订单号
-	OrderId        string  `json:"order_id"`        //  客户交易id
-	Amount         float64 `json:"amount"`          //  订单金额，保留4位小数
-	ActualAmount   float64 `json:"actual_amount"`   //  订单实际需要支付的金额，保留4位小数
-	Token          string  `json:"token"`           //  收款钱包地址
+	TradeId        string  `json:"trade_id"`        // epusdt订单号
+	OrderId        string  `json:"order_id"`        // 客户交易id
+	Amount         float64 `json:"amount"`          // 订单金额，保留4位小数
+	ActualAmount   float64 `json:"actual_amount"`   // 订单实际需要支付的金额，保留4位小数
+	Token          string  `json:"token"`           // 收款钱包地址
 	ExpirationTime int64   `json:"expiration_time"` // 过期时间 时间戳
 	PaymentUrl     string  `json:"payment_url"`     // 收银台地址
 }

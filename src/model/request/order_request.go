@@ -9,6 +9,7 @@ type CreateTransactionRequest struct {
 	NotifyUrl   string  `json:"notify_url" validate:"required"`
 	Signature   string  `json:"signature"  validate:"required"`
 	RedirectUrl string  `json:"redirect_url"`
+	Timestamp   int64   `json:"timestamp" validate:"required"`
 }
 
 func (r CreateTransactionRequest) Translates() map[string]string {
@@ -17,6 +18,7 @@ func (r CreateTransactionRequest) Translates() map[string]string {
 		"Amount":    "支付金额",
 		"NotifyUrl": "异步回调网址",
 		"Signature": "签名",
+		"Timestamp": "时间戳",
 	}
 }
 
@@ -30,5 +32,13 @@ type OrderProcessingRequest struct {
 
 type QueryTransactionRequest struct {
 	TradeId   string `json:"trade_id" validate:"required|maxLen:32"`
+	Timestamp int64  `json:"timestamp" validate:"required"`
 	Signature string `json:"signature"  validate:"required"`
+}
+
+func (r QueryTransactionRequest) Translates() map[string]string {
+	return validate.MS{
+		"TradeId":   "交易号",
+		"Timestamp": "时间戳",
+	}
 }

@@ -1,12 +1,18 @@
 package comm
 
 import (
+	"time"
+
 	"github.com/assimon/luuu/model/request"
 	"github.com/assimon/luuu/model/response"
 	"github.com/assimon/luuu/model/service"
 	"github.com/assimon/luuu/util/constant"
 	"github.com/labstack/echo/v4"
 )
+
+func isTimestampExpired(ts int64) bool {
+	return time.Now().After(time.Unix(ts, 0).Add(time.Minute * 10))
+}
 
 // CreateTransaction 创建交易
 func (c *BaseCommController) CreateTransaction(ctx echo.Context) (err error) {
@@ -16,6 +22,9 @@ func (c *BaseCommController) CreateTransaction(ctx echo.Context) (err error) {
 	}
 	if err = c.ValidateStruct(ctx, req); err != nil {
 		return c.FailJson(ctx, err)
+	}
+	if isTimestampExpired(req.Timestamp) {
+		return c.FailJson(ctx, constant.TimestampExpiredErr)
 	}
 	resp, err := service.CreateTransaction(req)
 	if err != nil {
@@ -31,6 +40,9 @@ func (c *BaseCommController) QueryTransaction(ctx echo.Context) (err error) {
 	}
 	if err = c.ValidateStruct(ctx, req); err != nil {
 		return c.FailJson(ctx, err)
+	}
+	if isTimestampExpired(req.Timestamp) {
+		return c.FailJson(ctx, constant.TimestampExpiredErr)
 	}
 	order, err := service.GetOrderInfoByTradeId(req.TradeId)
 	if err != nil {
