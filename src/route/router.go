@@ -11,7 +11,7 @@ import (
 // RegisterRoute 路由注册
 func RegisterRoute(e *echo.Echo) {
 	e.Any("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "hello epusdt, https://github.com/assimon/epusdt")
+		return c.String(http.StatusOK, "hello epusdt")
 	})
 	// ==== 支付相关=====
 	payRoute := e.Group("/pay")
