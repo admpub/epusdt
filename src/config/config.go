@@ -54,9 +54,29 @@ func Init() {
 	TgBotToken = viper.GetString("tg_bot_token")
 	TgProxy = viper.GetString("tg_proxy")
 	TgManage = viper.GetInt64("tg_manage")
+
+	// - Added by admpub -
+
 	CheckerDefPath = viper.GetString("checker_def_path")
 	if len(CheckerDefPath) > 0 {
 		CheckerDefPath = filepath.Join(gwd, CheckerDefPath)
+	}
+
+	c := &Config{
+		AppDebug:       AppDebug,
+		MysqlDns:       MysqlDns,
+		RuntimePath:    RuntimePath,
+		LogSavePath:    LogSavePath,
+		StaticPath:     StaticPath,
+		TgBotToken:     TgBotToken,
+		TgProxy:        TgProxy,
+		TgManage:       TgManage,
+		UsdtRate:       UsdtRate,
+		CheckerDefPath: CheckerDefPath,
+	}
+	err = FireInitialize(c)
+	if err != nil {
+		panic(err)
 	}
 }
 

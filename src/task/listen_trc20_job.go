@@ -1,14 +1,11 @@
 package task
 
 import (
-	"os"
 	"sync"
 
-	"github.com/assimon/luuu/config"
 	"github.com/assimon/luuu/model/data"
 	"github.com/assimon/luuu/model/service"
 	"github.com/assimon/luuu/util/log"
-	"gopkg.in/yaml.v3"
 )
 
 type ListenTrc20Job struct {
@@ -28,35 +25,25 @@ func (r ListenTrc20Job) Run() {
 		return
 	}
 	var wg sync.WaitGroup
-	if len(config.CheckerDefPath) > 0 {
-		var defs []*service.OrderCheckerDef
-		var b []byte
-		b, err = os.ReadFile(config.CheckerDefPath)
-		if err == nil {
-			err = yaml.Unmarshal(b, &defs)
-		}
-		if err == nil {
-			chr := service.Checker()
-			for _, address := range walletAddress {
-				wg.Add(1)
-				go func(token string) {
-					defer wg.Done()
-					defer func() {
-						if err := recover(); err != nil {
-							log.Sugar.Error(err)
-						}
-					}()
-					err := chr.Check(token)
-					if err != nil {
+	if len(service.Defs()) > 0 {
+		chr := service.Checker()
+		for _, address := range walletAddress {
+			wg.Add(1)
+			go func(token string) {
+				defer wg.Done()
+				defer func() {
+					if err := recover(); err != nil {
 						log.Sugar.Error(err)
 					}
-				}(address.Token)
-			}
-			wg.Wait()
-			return
+				}()
+				err := chr.Check(token)
+				if err != nil {
+					log.Sugar.Error(err)
+				}
+			}(address.Token)
 		}
-
-		log.Sugar.Error(err)
+		wg.Wait()
+		return
 	}
 	for _, address := range walletAddress {
 		wg.Add(1)

@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
+	"github.com/assimon/luuu/config"
 	"github.com/assimon/luuu/model/data"
 	"github.com/assimon/luuu/model/request"
 	"github.com/assimon/luuu/mq"
@@ -20,18 +22,51 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
 	"github.com/webx-top/echo/param"
+	"gopkg.in/yaml.v3"
 )
 
 var (
-	defs []*OrderCheckerDef
-	dmu  sync.RWMutex
-	chkr OrderChecker
-	once sync.Once
+	defs       []*OrderCheckerDef
+	defsInited bool
+	dmu        sync.RWMutex
+	chkr       OrderChecker
+	once       sync.Once
 )
+
+func init() {
+	config.OnInitialize(func(c *config.Config) error {
+		if len(c.CheckerDefPath) == 0 {
+			return nil
+		}
+		return ParseConfig(c.CheckerDefPath)
+	})
+}
+
+func ParseConfig(configFile string) error {
+	var defs []*OrderCheckerDef
+	b, err := os.ReadFile(configFile)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(b, &defs)
+	if err != nil {
+		return err
+	}
+	SetDefs(defs)
+	return nil
+}
+
+func DefsInited() bool {
+	dmu.Lock()
+	r := defsInited
+	dmu.Unlock()
+	return r
+}
 
 func SetDefs(_defs []*OrderCheckerDef) {
 	dmu.Lock()
 	defs = _defs
+	defsInited = true
 	dmu.Unlock()
 }
 
