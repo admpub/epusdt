@@ -16,5 +16,5 @@ func TestMarshalDefs(t *testing.T) {
 	b, err := yaml.Marshal(defs)
 	assert.NoError(t, err)
 	fmt.Println(string(b))
-	panic(err)
+	//panic(err)
 }
