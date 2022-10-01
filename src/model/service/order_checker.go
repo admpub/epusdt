@@ -356,6 +356,7 @@ func GetResult() *Result {
 }
 
 func PutResult(r *Result) {
+	r.Reset()
 	poolResult.Put(r)
 }
 
