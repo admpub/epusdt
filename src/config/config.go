@@ -2,21 +2,24 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
+	"path/filepath"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 var (
-	AppDebug    bool
-	MysqlDns    string
-	RuntimePath string
-	LogSavePath string
-	StaticPath  string
-	TgBotToken  string
-	TgProxy     string
-	TgManage    int64
-	UsdtRate    float64
+	AppDebug       bool
+	MysqlDns       string
+	RuntimePath    string
+	LogSavePath    string
+	StaticPath     string
+	TgBotToken     string
+	TgProxy        string
+	TgManage       int64
+	UsdtRate       float64
+	CheckerDefPath string
 )
 
 func Init() {
@@ -51,6 +54,10 @@ func Init() {
 	TgBotToken = viper.GetString("tg_bot_token")
 	TgProxy = viper.GetString("tg_proxy")
 	TgManage = viper.GetInt64("tg_manage")
+	CheckerDefPath = viper.GetString("checker_def_path")
+	if len(CheckerDefPath) > 0 {
+		CheckerDefPath = filepath.Join(gwd, CheckerDefPath)
+	}
 }
 
 func GetAppVersion() string {

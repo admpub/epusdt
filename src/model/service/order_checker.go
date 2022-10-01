@@ -1,0 +1,296 @@
+package service
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+	"sync"
+
+	"github.com/assimon/luuu/model/data"
+	"github.com/assimon/luuu/model/request"
+	"github.com/assimon/luuu/mq"
+	"github.com/assimon/luuu/mq/handle"
+	"github.com/assimon/luuu/telegram"
+	"github.com/assimon/luuu/util/http_client"
+	"github.com/assimon/luuu/util/json"
+	"github.com/go-resty/resty/v2"
+	"github.com/golang-module/carbon/v2"
+	"github.com/gookit/goutil/stdutil"
+	"github.com/hibiken/asynq"
+	"github.com/shopspring/decimal"
+	"github.com/webx-top/echo/param"
+)
+
+var (
+	defs []*OrderCheckerDef
+	dmu  sync.RWMutex
+	chkr OrderChecker
+	once sync.Once
+)
+
+func SetDefs(_defs []*OrderCheckerDef) {
+	dmu.Lock()
+	defs = _defs
+	dmu.Unlock()
+}
+
+func Defs() []*OrderCheckerDef {
+	dmu.RLock()
+	r := defs
+	dmu.RUnlock()
+	return r
+}
+
+func initChecker() {
+	chkr = NewDefaultCheck(Defs())
+}
+
+func Checker() OrderChecker {
+	once.Do(initChecker)
+	return chkr
+}
+
+type OrderChecker interface {
+	Check(token string) error
+}
+
+func NewDefaultCheck(defs []*OrderCheckerDef) OrderChecker {
+	return &defaultCheck{defs: defs}
+}
+
+func NewTronscanapiDef() *OrderCheckerDef {
+	d := NewCheckerDef(UsdtTrc20ApiUri)
+	d.QueryParams = map[string]string{
+		"sort":            "-timestamp",
+		"limit":           "50",
+		"start":           "0",
+		"direction":       "2",
+		"db_version":      "1",
+		"trc20Id":         "{trc20ContractAddress}",
+		"address":         "{token}",
+		"start_timestamp": "{startTime}",
+		"end_timestamp":   "{endTime}",
+	}
+	d.ListKeyName = `data`
+	d.CountKeyName = `page_size`
+	d.ItemKeyName.ToToken = `to`
+	d.ItemKeyName.Status = `contract_ret`
+	d.ItemKeyName.Amount = `amount`
+	d.ItemKeyName.Timestamp = `block_timestamp`
+	d.ItemKeyName.TransactionId = `hash`
+	d.AmountDivisor = 1000000
+	d.ItemSuccessValue = `SUCCESS`
+	return d
+}
+
+func NewCheckerDef(baseURL string) *OrderCheckerDef {
+	return &OrderCheckerDef{
+		BaseURL:          baseURL,
+		QueryParams:      map[string]string{},
+		Headers:          map[string]string{},
+		ItemKeyName:      &ItemKeyName{},
+		ItemSuccessValue: `SUCCESS`,
+	}
+}
+
+type defaultCheck struct {
+	defs []*OrderCheckerDef
+}
+
+func (d *defaultCheck) Check(token string) (err error) {
+	client := http_client.GetHttpClient()
+	startTime := carbon.Now().AddHours(-24).TimestampWithMillisecond()
+	endTime := carbon.Now().TimestampWithMillisecond()
+	for _, def := range d.defs {
+		err = d.check(def, client, token, startTime, endTime)
+		if err == nil {
+			return
+		}
+		if !errors.Is(err, ErrAPI) {
+			return
+		}
+	}
+	return
+}
+
+var (
+	ErrAPI                = errors.New(`API Error`)
+	ErrMismathedOrderTime = errors.New("orders time cannot actually be matched")
+)
+
+func (d *defaultCheck) check(def *OrderCheckerDef, client *resty.Client, token string, startTime int64, endTime int64) error {
+	queryParams := def.QueryParams
+	for k, v := range queryParams {
+		switch v {
+		case `{trc20ContractAddress}`:
+			v = Trc20ContractAddress
+		case `{token}`:
+			v = token
+		case `{startTime}`:
+			v = stdutil.ToString(startTime)
+		case `{endTime}`:
+			v = stdutil.ToString(endTime)
+		}
+		queryParams[k] = v
+	}
+	apiURL := def.BaseURL
+	apiURL = strings.ReplaceAll(apiURL, `{token}`, token)
+	resp, err := client.R().SetQueryParams(queryParams).Get(apiURL)
+	if err != nil {
+		return fmt.Errorf(`%w: %v`, ErrAPI, err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return errors.New(resp.Status())
+	}
+	respData := param.Store{}
+	err = json.Cjson.Unmarshal(resp.Body(), &respData)
+	if err != nil {
+		return fmt.Errorf(`%w: %v`, ErrAPI, err)
+	}
+	if len(def.CountKeyName) > 0 {
+		if def.GetInt64(respData, def.CountKeyName) <= 0 {
+			return nil
+		}
+	}
+	list := def.Get(respData, def.ListKeyName)
+	rows, ok := list.([]map[string]interface{})
+	if !ok {
+		return fmt.Errorf(`%w: unsupported list data type: %T`, ErrAPI, list)
+	}
+	for _, row := range rows {
+		result := def.ParseResult(row)
+		if result.ToToken != token || result.Status != def.ItemSuccessValue {
+			continue
+		}
+		var amount float64
+		if def.AmountDivisor > 0 {
+			decimalQuant, err := decimal.NewFromString(result.Amount)
+			if err != nil {
+				return err
+			}
+			decimalDivisor := decimal.NewFromFloat(def.AmountDivisor)
+			amount = decimalQuant.Div(decimalDivisor).InexactFloat64()
+		} else {
+			amount = param.AsFloat64(result.Amount)
+		}
+		tradeId, err := data.GetTradeIdByWalletAddressAndAmount(token, amount)
+		if err != nil {
+			return err
+		}
+		if tradeId == "" {
+			continue
+		}
+		order, err := data.GetOrderInfoByTradeId(tradeId)
+		if err != nil {
+			return err
+		}
+		// 区块的确认时间必须在订单创建时间之后
+		createTime := order.CreatedAt.TimestampWithMillisecond()
+		if result.Timestamp < createTime {
+			return ErrMismathedOrderTime
+		}
+		// 到这一步就完全算是支付成功了
+		req := &request.OrderProcessingRequest{
+			Token:              token,
+			TradeId:            tradeId,
+			Amount:             amount,
+			BlockTransactionId: result.TransactionId,
+		}
+		err = OrderProcessing(req)
+		if err != nil {
+			return err
+		}
+		// 回调队列
+		orderCallbackQueue, _ := handle.NewOrderCallbackQueue(order)
+		mq.MClient.Enqueue(orderCallbackQueue, asynq.MaxRetry(5))
+		// 发送机器人消息
+		msgTpl := `
+<b>📢📢有新的交易支付成功！</b>
+<pre>交易号：%s</pre>
+<pre>订单号：%s</pre>
+<pre>请求支付金额：%f cny</pre>
+<pre>实际支付金额：%f usdt</pre>
+<pre>钱包地址：%s</pre>
+<pre>订单创建时间：%s</pre>
+<pre>支付成功时间：%s</pre>
+`
+		msg := fmt.Sprintf(msgTpl, order.TradeId, order.OrderId, order.Amount, order.ActualAmount, order.Token, order.CreatedAt.ToDateTimeString(), carbon.Now().ToDateTimeString())
+		telegram.SendToBot(msg)
+	}
+	return nil
+}
+
+type OrderCheckerDef struct {
+	BaseURL          string            `yaml:"base_url"`
+	QueryParams      map[string]string `yaml:"query_params"`
+	Headers          map[string]string `yaml:"headers"`
+	ListKeyName      string            `yaml:"list_key_name"`
+	CountKeyName     string            `yaml:"count_key_name"`
+	ItemKeyName      *ItemKeyName      `yaml:"item_key_name"`
+	ItemSuccessValue string            `yaml:"item_success_value"`
+	AmountDivisor    float64           `yaml:"amount_divisor"`
+}
+
+func (a *OrderCheckerDef) GetString(data param.Store, keyName string) string {
+	parts := strings.Split(keyName, `.`)
+	switch len(parts) {
+	case 1:
+		return data.String(parts[0])
+	case 2:
+		return data.GetStore(parts[0]).String(parts[len(parts)-1])
+	default:
+		return data.GetStoreByKeys(parts[0 : len(parts)-2]...).String(parts[len(parts)-1])
+	}
+}
+
+func (a *OrderCheckerDef) Get(data param.Store, keyName string) interface{} {
+	parts := strings.Split(keyName, `.`)
+	switch len(parts) {
+	case 1:
+		return data.Get(parts[0])
+	case 2:
+		return data.GetStore(parts[0]).Get(parts[len(parts)-1])
+	default:
+		return data.GetStoreByKeys(parts[0 : len(parts)-2]...).Get(parts[len(parts)-1])
+	}
+}
+
+func (a *OrderCheckerDef) GetInt64(data param.Store, keyName string) int64 {
+	parts := strings.Split(keyName, `.`)
+	switch len(parts) {
+	case 1:
+		return data.Int64(parts[0])
+	case 2:
+		return data.GetStore(parts[0]).Int64(parts[len(parts)-1])
+	default:
+		return data.GetStoreByKeys(parts[0 : len(parts)-2]...).Int64(parts[len(parts)-1])
+	}
+}
+
+func (a *OrderCheckerDef) ParseResult(data param.Store) *Result {
+	r := &Result{
+		ToToken:       a.GetString(data, a.ItemKeyName.ToToken),
+		Status:        a.GetString(data, a.ItemKeyName.Status),
+		Amount:        a.GetString(data, a.ItemKeyName.Amount),
+		Timestamp:     a.GetInt64(data, a.ItemKeyName.Timestamp),
+		TransactionId: a.GetString(data, a.ItemKeyName.TransactionId),
+	}
+	return r
+}
+
+type ItemKeyName struct {
+	ToToken       string `yaml:"to_token"`
+	Status        string `yaml:"status"`
+	Amount        string `yaml:"amount"`
+	Timestamp     string `yaml:"timestamp"`
+	TransactionId string `yaml:"transaction_id"`
+}
+
+type Result struct {
+	ToToken       string
+	Status        string
+	Amount        string
+	Timestamp     int64
+	TransactionId string
+}

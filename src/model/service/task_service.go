@@ -2,6 +2,9 @@ package service
 
 import (
 	"fmt"
+	"net/http"
+	"sync"
+
 	"github.com/assimon/luuu/model/data"
 	"github.com/assimon/luuu/model/request"
 	"github.com/assimon/luuu/mq"
@@ -14,11 +17,10 @@ import (
 	"github.com/gookit/goutil/stdutil"
 	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
-	"net/http"
-	"sync"
 )
 
 const UsdtTrc20ApiUri = "https://apilist.tronscanapi.com/api/transfer/trc20"
+const Trc20ContractAddress = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
 
 type UsdtTrc20Resp struct {
 	PageSize int    `json:"page_size"`
@@ -77,7 +79,7 @@ func Trc20CallBack(token string, wg *sync.WaitGroup) {
 		"start":           "0",
 		"direction":       "2",
 		"db_version":      "1",
-		"trc20Id":         "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+		"trc20Id":         Trc20ContractAddress,
 		"address":         token,
 		"start_timestamp": stdutil.ToString(startTime),
 		"end_timestamp":   stdutil.ToString(endTime),

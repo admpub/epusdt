@@ -1,0 +1,41 @@
+- base_url: https://apilist.tronscanapi.com/api/transfer/trc20
+  query_params:
+    address: '{token}'
+    db_version: "1"
+    direction: "2"
+    end_timestamp: '{endTime}'
+    limit: "50"
+    sort: -timestamp
+    start: "0"
+    start_timestamp: '{startTime}'
+    trc20Id: '{trc20ContractAddress}'
+  list_key_name: data
+  count_key_name: page_size
+  item_key_name:
+    to_token: to
+    status: contract_ret
+    amount: amount
+    timestamp: block_timestamp
+    transaction_id: hash
+  item_success_value: SUCCESS
+  amount_divisor: 1e+06
+
+- base_url: https://api.trongrid.io/v1/accounts/{token}/transactions/trc20
+  headers:
+    TRON-PRO-API-KEY: ""
+  query_params:
+    only_confirmed: "true"
+    only_to: "true"
+    limit: "50"
+    min_timestamp: '{startTime}'
+    contract_address: '{trc20ContractAddress}'
+  list_key_name: data
+  count_key_name: 
+  item_key_name:
+    to_token: to
+    status: 
+    amount: value
+    timestamp: block_timestamp
+    transaction_id: transaction_id
+  item_success_value: 
+  amount_divisor: 1e+06

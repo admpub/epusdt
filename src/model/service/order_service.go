@@ -26,6 +26,7 @@ const (
 	UsdtMinimumPaymentAmount = 0.01 // usdt最低支付金额
 	UsdtAmountPerIncrement   = 0.01 // usdt每次递增金额
 	IncrementalMaximumNumber = 100  // 最大递增次数
+	AmountPrecision          = 2    // 金额保留小数位数
 )
 
 var gCreateTransactionLock sync.Mutex
@@ -34,7 +35,7 @@ var gCreateTransactionLock sync.Mutex
 func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateTransactionResponse, error) {
 	gCreateTransactionLock.Lock()
 	defer gCreateTransactionLock.Unlock()
-	payAmount := math.MustParsePrecFloat64(req.Amount, 2)
+	payAmount := math.MustParsePrecFloat64(req.Amount, AmountPrecision)
 	// 按照汇率转化USDT
 	decimalPayAmount := decimal.NewFromFloat(payAmount)
 	decimalRate := decimal.NewFromFloat(config.GetUsdtRate())
@@ -65,7 +66,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 			if len(walletAddress) <= 0 {
 				return nil, constant.NotAvailableWalletAddress
 			}
-			amount := math.MustParsePrecFloat64(decimalUsdt.InexactFloat64(), 3)
+			amount := math.MustParsePrecFloat64(decimalUsdt.InexactFloat64(), AmountPrecision)
 			availableToken, availableAmount, err := CalculateAvailableWalletAndAmount(amount, walletAddress)
 			if err != nil {
 				return nil, err
@@ -121,7 +122,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 	if len(walletAddress) <= 0 {
 		return nil, constant.NotAvailableWalletAddress
 	}
-	amount := math.MustParsePrecFloat64(decimalUsdt.InexactFloat64(), 2)
+	amount := math.MustParsePrecFloat64(decimalUsdt.InexactFloat64(), AmountPrecision)
 	availableToken, availableAmount, err := CalculateAvailableWalletAndAmount(amount, walletAddress)
 	if err != nil {
 		return nil, err
