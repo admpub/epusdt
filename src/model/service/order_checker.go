@@ -171,7 +171,11 @@ func (d *defaultCheck) check(def *OrderCheckerDef, client *resty.Client, token s
 	}
 	apiURL := def.BaseURL
 	apiURL = strings.ReplaceAll(apiURL, `{token}`, token)
-	resp, err := client.R().SetQueryParams(queryParams).Get(apiURL)
+	req := client.R()
+	if len(def.Headers) > 0 {
+		req = req.SetHeaders(def.Headers)
+	}
+	resp, err := req.SetQueryParams(queryParams).Get(apiURL)
 	if err != nil {
 		return fmt.Errorf(`%w: %v`, ErrAPI, err)
 	}
