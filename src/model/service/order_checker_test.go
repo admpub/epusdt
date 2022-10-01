@@ -23,5 +23,6 @@ func TestCheck(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, result.IsSuccess(def))
 		pp.Println(amount, result)
+		result.Release()
 	}
 }

@@ -218,26 +218,32 @@ func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64
 	for _, row := range rows {
 		result := def.ParseResult(row)
 		if result.ToToken != token || !result.IsSuccess(def) {
+			result.Release()
 			continue
 		}
 		amount, err := result.GetAmount(def)
 		if err != nil {
+			result.Release()
 			return err
 		}
 		tradeId, err := data.GetTradeIdByWalletAddressAndAmount(token, amount)
 		if err != nil {
+			result.Release()
 			return err
 		}
 		if len(tradeId) == 0 {
+			result.Release()
 			continue
 		}
 		order, err := data.GetOrderInfoByTradeId(tradeId)
 		if err != nil {
+			result.Release()
 			return err
 		}
 		// 区块的确认时间必须在订单创建时间之后
 		createTime := order.CreatedAt.TimestampWithMillisecond()
 		if result.Timestamp < createTime {
+			result.Release()
 			return ErrMismathedOrderTime
 		}
 		// 到这一步就完全算是支付成功了
@@ -249,6 +255,7 @@ func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64
 		}
 		err = OrderProcessing(req)
 		if err != nil {
+			result.Release()
 			return err
 		}
 		// 回调队列
@@ -267,6 +274,7 @@ func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64
 `
 		msg := fmt.Sprintf(msgTpl, order.TradeId, order.OrderId, order.Amount, order.ActualAmount, order.Token, order.CreatedAt.ToDateTimeString(), carbon.Now().ToDateTimeString())
 		telegram.SendToBot(msg)
+		result.Release()
 	}
 	return nil
 }
@@ -319,13 +327,12 @@ func (a *OrderCheckerDef) GetInt64(data param.Store, keyName string) int64 {
 }
 
 func (a *OrderCheckerDef) ParseResult(data param.Store) *Result {
-	r := &Result{
-		ToToken:       a.GetString(data, a.ItemKeyName.ToToken),
-		Status:        a.GetString(data, a.ItemKeyName.Status),
-		Amount:        a.GetString(data, a.ItemKeyName.Amount),
-		Timestamp:     a.GetInt64(data, a.ItemKeyName.Timestamp),
-		TransactionId: a.GetString(data, a.ItemKeyName.TransactionId),
-	}
+	r := GetResult()
+	r.ToToken = a.GetString(data, a.ItemKeyName.ToToken)
+	r.Status = a.GetString(data, a.ItemKeyName.Status)
+	r.Amount = a.GetString(data, a.ItemKeyName.Amount)
+	r.Timestamp = a.GetInt64(data, a.ItemKeyName.Timestamp)
+	r.TransactionId = a.GetString(data, a.ItemKeyName.TransactionId)
 	return r
 }
 
@@ -335,6 +342,21 @@ type ItemKeyName struct {
 	Amount        string `yaml:"amount"`
 	Timestamp     string `yaml:"timestamp"`
 	TransactionId string `yaml:"transaction_id"`
+}
+
+var poolResult = sync.Pool{
+	New: func() interface{} {
+		//println(`-------------------> poolResultNew`)
+		return &Result{}
+	},
+}
+
+func GetResult() *Result {
+	return poolResult.Get().(*Result)
+}
+
+func PutResult(r *Result) {
+	poolResult.Put(r)
 }
 
 type Result struct {
@@ -362,4 +384,16 @@ func (r *Result) GetAmount(def *OrderCheckerDef) (float64, error) {
 		amount = param.AsFloat64(r.Amount)
 	}
 	return amount, nil
+}
+
+func (r *Result) Reset() {
+	r.ToToken = ``
+	r.Status = ``
+	r.Amount = ``
+	r.Timestamp = 0
+	r.TransactionId = ``
+}
+
+func (r *Result) Release() {
+	PutResult(r)
 }
