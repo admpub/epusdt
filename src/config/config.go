@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/assimon/luuu/util/http_client"
 	"github.com/spf13/viper"
 )
 
@@ -20,6 +21,8 @@ var (
 	TgManage       int64
 	UsdtRate       float64
 	CheckerDefPath string
+	CheckerTimeout int64
+	CheckerProxy   string
 )
 
 func Init() {
@@ -61,6 +64,8 @@ func Init() {
 	if len(CheckerDefPath) > 0 {
 		CheckerDefPath = filepath.Join(gwd, CheckerDefPath)
 	}
+	CheckerTimeout = viper.GetInt64("checker_timeout")
+	CheckerProxy = viper.GetString("checker_proxy")
 
 	c := &Config{
 		AppDebug:       AppDebug,
@@ -73,7 +78,13 @@ func Init() {
 		TgManage:       TgManage,
 		UsdtRate:       UsdtRate,
 		CheckerDefPath: CheckerDefPath,
+		CheckerTimeout: CheckerTimeout,
+		CheckerProxy:   CheckerProxy,
 	}
+	if CheckerTimeout > 0 {
+		http_client.TimeoutSeconds = CheckerTimeout
+	}
+	http_client.CheckerProxy = CheckerProxy
 	err = FireInitialize(c)
 	if err != nil {
 		panic(err)
@@ -81,7 +92,7 @@ func Init() {
 }
 
 func GetAppVersion() string {
-	return "0.0.2"
+	return "0.0.3"
 }
 
 func GetAppName() string {

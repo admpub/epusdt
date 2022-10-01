@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/admpub/fsnotify v1.5.0 // indirect
+	github.com/admpub/pp v0.0.4
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.7.0

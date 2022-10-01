@@ -11,6 +11,8 @@ type Config struct {
 	TgManage       int64
 	UsdtRate       float64
 	CheckerDefPath string
+	CheckerTimeout int64
+	CheckerProxy   string
 }
 
 var onInitializes = []func(*Config) error{}

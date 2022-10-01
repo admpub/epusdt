@@ -90,8 +90,11 @@ type OrderChecker interface {
 	Check(token string) error
 }
 
-func NewDefaultCheck(defs []*OrderCheckerDef) OrderChecker {
-	return &defaultCheck{defs: defs}
+func NewDefaultCheck(defs []*OrderCheckerDef) *defaultCheck {
+	return &defaultCheck{
+		defs:   defs,
+		client: http_client.GetHttpClient(),
+	}
 }
 
 func NewTronscanapiDef() *OrderCheckerDef {
@@ -130,15 +133,15 @@ func NewCheckerDef(baseURL string) *OrderCheckerDef {
 }
 
 type defaultCheck struct {
-	defs []*OrderCheckerDef
+	defs   []*OrderCheckerDef
+	client *resty.Client
 }
 
 func (d *defaultCheck) Check(token string) (err error) {
-	client := http_client.GetHttpClient()
 	startTime := carbon.Now().AddHours(-24).TimestampWithMillisecond()
 	endTime := carbon.Now().TimestampWithMillisecond()
 	for _, def := range d.defs {
-		err = d.check(def, client, token, startTime, endTime)
+		err = d.check(def, token, startTime, endTime)
 		if err == nil {
 			return
 		}
@@ -154,7 +157,7 @@ var (
 	ErrMismathedOrderTime = errors.New("orders time cannot actually be matched")
 )
 
-func (d *defaultCheck) check(def *OrderCheckerDef, client *resty.Client, token string, startTime int64, endTime int64) error {
+func (d *defaultCheck) query(def *OrderCheckerDef, token string, startTime int64, endTime int64) ([]map[string]interface{}, error) {
 	queryParams := def.QueryParams
 	for k, v := range queryParams {
 		switch v {
@@ -171,53 +174,61 @@ func (d *defaultCheck) check(def *OrderCheckerDef, client *resty.Client, token s
 	}
 	apiURL := def.BaseURL
 	apiURL = strings.ReplaceAll(apiURL, `{token}`, token)
-	req := client.R()
+	req := d.client.R()
 	if len(def.Headers) > 0 {
 		req = req.SetHeaders(def.Headers)
 	}
 	resp, err := req.SetQueryParams(queryParams).Get(apiURL)
 	if err != nil {
-		return fmt.Errorf(`%w: %v`, ErrAPI, err)
+		return nil, fmt.Errorf(`%w: %v`, ErrAPI, err)
 	}
 	if resp.StatusCode() != http.StatusOK {
-		return errors.New(resp.Status())
+		return nil, errors.New(resp.Status())
 	}
 	respData := param.Store{}
 	err = json.Cjson.Unmarshal(resp.Body(), &respData)
 	if err != nil {
-		return fmt.Errorf(`%w: %v`, ErrAPI, err)
+		return nil, fmt.Errorf(`%w: %v`, ErrAPI, err)
 	}
 	if len(def.CountKeyName) > 0 {
 		if def.GetInt64(respData, def.CountKeyName) <= 0 {
-			return nil
+			return nil, nil
 		}
 	}
 	list := def.Get(respData, def.ListKeyName)
-	rows, ok := list.([]map[string]interface{})
-	if !ok {
-		return fmt.Errorf(`%w: unsupported list data type: %T`, ErrAPI, list)
+	switch rows := list.(type) {
+	case []interface{}:
+		results := make([]map[string]interface{}, len(rows))
+		for index, row := range rows {
+			results[index], _ = row.(map[string]interface{})
+		}
+		return results, nil
+	case []map[string]interface{}:
+		return rows, nil
+	default:
+		return nil, fmt.Errorf(`%w: unsupported list data type: %T`, ErrAPI, list)
+	}
+}
+
+func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64, endTime int64) error {
+	rows, err := d.query(def, token, startTime, endTime)
+	if err != nil {
+		return err
 	}
 	for _, row := range rows {
 		result := def.ParseResult(row)
-		if result.ToToken != token || result.Status != def.ItemSuccessValue {
+		if result.ToToken != token || !result.IsSuccess(def) {
 			continue
 		}
-		var amount float64
-		if def.AmountDivisor > 0 {
-			decimalQuant, err := decimal.NewFromString(result.Amount)
-			if err != nil {
-				return err
-			}
-			decimalDivisor := decimal.NewFromFloat(def.AmountDivisor)
-			amount = decimalQuant.Div(decimalDivisor).InexactFloat64()
-		} else {
-			amount = param.AsFloat64(result.Amount)
+		amount, err := result.GetAmount(def)
+		if err != nil {
+			return err
 		}
 		tradeId, err := data.GetTradeIdByWalletAddressAndAmount(token, amount)
 		if err != nil {
 			return err
 		}
-		if tradeId == "" {
+		if len(tradeId) == 0 {
 			continue
 		}
 		order, err := data.GetOrderInfoByTradeId(tradeId)
@@ -332,4 +343,23 @@ type Result struct {
 	Amount        string
 	Timestamp     int64
 	TransactionId string
+}
+
+func (r *Result) IsSuccess(def *OrderCheckerDef) bool {
+	return r.Status == def.ItemSuccessValue
+}
+
+func (r *Result) GetAmount(def *OrderCheckerDef) (float64, error) {
+	var amount float64
+	if def.AmountDivisor > 0 {
+		decimalQuant, err := decimal.NewFromString(r.Amount)
+		if err != nil {
+			return amount, err
+		}
+		decimalDivisor := decimal.NewFromFloat(def.AmountDivisor)
+		amount = decimalQuant.Div(decimalDivisor).InexactFloat64()
+	} else {
+		amount = param.AsFloat64(r.Amount)
+	}
+	return amount, nil
 }
