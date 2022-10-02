@@ -27,6 +27,8 @@ const (
 	UsdtAmountPerIncrement   = 0.01 // usdt每次递增金额
 	IncrementalMaximumNumber = 100  // 最大递增次数
 	AmountPrecision          = 2    // 金额保留小数位数
+	DefaultCurrency          = `USDT`
+	DefaultChainType         = `TRC20`
 )
 
 var gCreateTransactionLock sync.Mutex
@@ -78,6 +80,8 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 			exist.Amount = req.Amount
 			exist.ActualAmount = availableAmount
 			exist.Token = availableToken
+			exist.Currency = req.Currency
+			exist.ChainType = req.ChainType
 			exist.NotifyUrl = req.NotifyUrl
 			exist.RedirectUrl = req.RedirectUrl
 			exist.CreatedAt = carbon.Time{Carbon: carbon.Now()}
@@ -88,6 +92,8 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 				`amount`:           exist.Amount,
 				`actual_amount`:    exist.ActualAmount,
 				`token`:            exist.Token,
+				`currency`:         exist.Currency,
+				`chain_type`:       exist.ChainType,
 				`notify_url`:       exist.NotifyUrl,
 				`redirect_url`:     exist.RedirectUrl,
 				`created_at`:       exist.CreatedAt,
@@ -137,6 +143,8 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 		Amount:       req.Amount,
 		ActualAmount: availableAmount,
 		Token:        availableToken,
+		Currency:     req.Currency,
+		ChainType:    req.ChainType,
 		Status:       mdb.StatusWaitPay,
 		NotifyUrl:    req.NotifyUrl,
 		RedirectUrl:  req.RedirectUrl,

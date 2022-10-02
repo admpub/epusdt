@@ -9,6 +9,8 @@ create table orders
     actual_amount        decimal(19, 4) not null comment '订单实际需要支付的金额，保留4位小数',
     amount               decimal(19, 4) not null comment '订单金额，保留4位小数',
     token                varchar(50)    not null comment '所属钱包地址',
+    currency             varchar(10)    not null default 'USDT' comment '币种',
+    chain_type           varchar(30)    not null default 'TRC20' comment '链类型',
     status               int default 1  not null comment '1：等待支付，2：支付成功，3：已过期',
     notify_url           varchar(128)   not null comment '异步回调地址',
     redirect_url         varchar(128)   null comment '同步回调地址',
@@ -32,6 +34,8 @@ create table wallet_address
     id         int auto_increment
         primary key,
     token      varchar(50)   not null comment '钱包token',
+    currency   varchar(10)    not null default 'USDT' comment '币种',
+    chain_type varchar(30)    not null default 'TRC20' comment '链类型',
     status     int default 1 not null comment '1:启用 2:禁用',
     created_at timestamp     null,
     updated_at timestamp     null,

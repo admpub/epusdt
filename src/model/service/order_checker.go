@@ -26,11 +26,10 @@ import (
 )
 
 var (
-	defs       []*OrderCheckerDef
-	defsInited bool
-	dmu        sync.RWMutex
-	chkr       OrderChecker
-	once       sync.Once
+	defs []*OrderCheckerDef
+	dmu  sync.RWMutex
+	chkr OrderChecker
+	once sync.Once
 )
 
 func init() {
@@ -56,17 +55,9 @@ func ParseConfig(configFile string) error {
 	return nil
 }
 
-func DefsInited() bool {
-	dmu.Lock()
-	r := defsInited
-	dmu.Unlock()
-	return r
-}
-
 func SetDefs(_defs []*OrderCheckerDef) {
 	dmu.Lock()
 	defs = _defs
-	defsInited = true
 	dmu.Unlock()
 }
 

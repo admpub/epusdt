@@ -10,6 +10,8 @@ type CreateTransactionRequest struct {
 	Signature   string  `json:"signature"  validate:"required"`
 	RedirectUrl string  `json:"redirect_url"`
 	Timestamp   int64   `json:"timestamp" validate:"required"`
+	Currency    string  `json:"currency"`
+	ChainType   string  `json:"chain_type"`
 }
 
 func (r CreateTransactionRequest) Translates() map[string]string {
@@ -19,6 +21,8 @@ func (r CreateTransactionRequest) Translates() map[string]string {
 		"NotifyUrl": "异步回调网址",
 		"Signature": "签名",
 		"Timestamp": "时间戳",
+		"Currency":  "币种",
+		"ChainType": "链类型",
 	}
 }
 

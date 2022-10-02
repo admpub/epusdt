@@ -3,6 +3,7 @@ package comm
 import (
 	"time"
 
+	"github.com/assimon/luuu/config"
 	"github.com/assimon/luuu/model/request"
 	"github.com/assimon/luuu/model/response"
 	"github.com/assimon/luuu/model/service"
@@ -25,6 +26,15 @@ func (c *BaseCommController) CreateTransaction(ctx echo.Context) (err error) {
 	}
 	if isTimestampExpired(req.Timestamp) {
 		return c.FailJson(ctx, constant.TimestampExpiredErr)
+	}
+	if len(req.Currency) == 0 {
+		req.Currency = service.DefaultCurrency
+	}
+	if len(req.ChainType) == 0 {
+		req.ChainType = service.DefaultChainType
+	}
+	if err = config.CurrencyChains.Validate(req.Currency, req.ChainType); err != nil {
+		return c.FailJson(ctx, err)
 	}
 	resp, err := service.CreateTransaction(req)
 	if err != nil {

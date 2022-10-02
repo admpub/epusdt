@@ -3,8 +3,16 @@ module github.com/assimon/luuu
 go 1.16
 
 require (
+	github.com/admpub/copier v0.0.2 // indirect
+	github.com/admpub/decimal v1.3.1 // indirect
+	github.com/admpub/events v1.3.5 // indirect
 	github.com/admpub/fsnotify v1.5.0 // indirect
+	github.com/admpub/go-isatty v0.0.10 // indirect
+	github.com/admpub/go-reuseport v0.0.4 // indirect
+	github.com/admpub/humanize v0.0.0-20190501023926-5f826e92c8ca // indirect
+	github.com/admpub/log v1.3.3 // indirect
 	github.com/admpub/pp v0.0.4
+	github.com/admpub/realip v0.0.0-20210421084339-374cf5df122d // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.7.0
@@ -25,8 +33,11 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.7.1
+	github.com/webx-top/captcha v0.1.0 // indirect
 	github.com/webx-top/com v0.5.0
 	github.com/webx-top/echo v2.26.14+incompatible
+	github.com/webx-top/poolx v0.0.0-20210912044716-5cfa2d58e380 // indirect
+	github.com/webx-top/validation v0.0.3 // indirect
 	go.uber.org/zap v1.17.0
 	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect

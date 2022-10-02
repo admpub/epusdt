@@ -80,6 +80,7 @@ func Init() {
 		CheckerDefPath: CheckerDefPath,
 		CheckerTimeout: CheckerTimeout,
 		CheckerProxy:   CheckerProxy,
+		CurrencyChains: CurrencyChains,
 	}
 	if CheckerTimeout > 0 {
 		http_client.TimeoutSeconds = CheckerTimeout
