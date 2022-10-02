@@ -63,13 +63,17 @@ type Data struct {
 }
 
 // Trc20CallBack trc20回调
-func Trc20CallBack(token string, wg *sync.WaitGroup) {
+func Trc20CallBack(token string, currency string, chainType string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer func() {
 		if err := recover(); err != nil {
 			log.Sugar.Error(err)
 		}
 	}()
+	if currency != DefaultCurrency || chainType != DefaultChainType {
+		log.Sugar.Errorf(`unsupported checker for currency-chain: %s-%s`, currency, chainType)
+		return
+	}
 	client := http_client.GetHttpClient()
 	startTime := carbon.Now().AddHours(-24).TimestampWithMillisecond()
 	endTime := carbon.Now().TimestampWithMillisecond()
@@ -108,7 +112,7 @@ func Trc20CallBack(token string, wg *sync.WaitGroup) {
 		}
 		decimalDivisor := decimal.NewFromFloat(1000000)
 		amount := decimalQuant.Div(decimalDivisor).InexactFloat64()
-		tradeId, err := data.GetTradeIdByWalletAddressAndAmount(token, amount)
+		tradeId, err := data.GetTradeIdByWalletAddressAndAmount(token, amount, currency, chainType)
 		if err != nil {
 			panic(err)
 		}
@@ -129,6 +133,8 @@ func Trc20CallBack(token string, wg *sync.WaitGroup) {
 			Token:              token,
 			TradeId:            tradeId,
 			Amount:             amount,
+			Currency:           currency,
+			ChainType:          chainType,
 			BlockTransactionId: transfer.Hash,
 		}
 		err = OrderProcessing(req)

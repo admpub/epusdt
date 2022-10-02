@@ -26,10 +26,10 @@ import (
 )
 
 var (
-	defs []*OrderCheckerDef
-	dmu  sync.RWMutex
-	chkr OrderChecker
-	once sync.Once
+	defs  []*OrderCheckerDef
+	dmu   sync.RWMutex
+	chkrs = map[string]OrderChecker{}
+	once  sync.Once
 )
 
 func init() {
@@ -69,16 +69,35 @@ func Defs() []*OrderCheckerDef {
 }
 
 func initChecker() {
-	chkr = NewDefaultCheck(Defs())
+	mapdefs := map[string][]*OrderCheckerDef{}
+	for _, def := range Defs() {
+		if len(def.Currency) == 0 {
+			def.Currency = DefaultCurrency
+		}
+		if len(def.ChainType) == 0 {
+			def.ChainType = DefaultChainType
+		}
+		key := def.Currency + `-` + def.ChainType
+		if _, ok := mapdefs[key]; !ok {
+			mapdefs[key] = []*OrderCheckerDef{}
+		}
+		mapdefs[key] = append(mapdefs[key], def)
+	}
+	for key, defs := range mapdefs {
+		if len(defs) == 0 {
+			continue
+		}
+		chkrs[key] = NewDefaultCheck(defs)
+	}
 }
 
-func Checker() OrderChecker {
+func Checker(currency string, chainType string) OrderChecker {
 	once.Do(initChecker)
-	return chkr
+	return chkrs[currency+`-`+chainType]
 }
 
 type OrderChecker interface {
-	Check(token string) error
+	Check(token string, currency string, chainType string) error
 }
 
 func NewDefaultCheck(defs []*OrderCheckerDef) *defaultCheck {
@@ -128,11 +147,11 @@ type defaultCheck struct {
 	client *resty.Client
 }
 
-func (d *defaultCheck) Check(token string) (err error) {
+func (d *defaultCheck) Check(token string, currency string, chainType string) (err error) {
 	startTime := carbon.Now().AddHours(-24).TimestampWithMillisecond()
 	endTime := carbon.Now().TimestampWithMillisecond()
 	for _, def := range d.defs {
-		err = d.check(def, token, startTime, endTime)
+		err = d.check(def, token, currency, chainType, startTime, endTime)
 		if err == nil {
 			return
 		}
@@ -201,7 +220,7 @@ func (d *defaultCheck) query(def *OrderCheckerDef, token string, startTime int64
 	}
 }
 
-func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64, endTime int64) error {
+func (d *defaultCheck) check(def *OrderCheckerDef, token string, currency string, chainType string, startTime int64, endTime int64) error {
 	rows, err := d.query(def, token, startTime, endTime)
 	if err != nil {
 		return err
@@ -217,7 +236,7 @@ func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64
 			result.Release()
 			return err
 		}
-		tradeId, err := data.GetTradeIdByWalletAddressAndAmount(token, amount)
+		tradeId, err := data.GetTradeIdByWalletAddressAndAmount(token, amount, currency, chainType)
 		if err != nil {
 			result.Release()
 			return err
@@ -242,6 +261,8 @@ func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64
 			Token:              token,
 			TradeId:            tradeId,
 			Amount:             amount,
+			Currency:           currency,
+			ChainType:          chainType,
 			BlockTransactionId: result.TransactionId,
 		}
 		err = OrderProcessing(req)
@@ -271,6 +292,8 @@ func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64
 }
 
 type OrderCheckerDef struct {
+	Currency         string            `yaml:"currency"`
+	ChainType        string            `yaml:"chain_type"`
 	BaseURL          string            `yaml:"base_url"`
 	QueryParams      map[string]string `yaml:"query_params"`
 	Headers          map[string]string `yaml:"headers"`

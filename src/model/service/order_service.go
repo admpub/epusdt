@@ -106,7 +106,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 				return nil, err
 			}
 			// 锁定支付池
-			err = data.LockTransaction(availableToken, exist.TradeId, availableAmount, config.GetOrderExpirationTimeDuration())
+			err = data.LockTransaction(availableToken, exist.TradeId, availableAmount, req.Currency, req.ChainType, config.GetOrderExpirationTimeDuration())
 			if err != nil {
 				tx.Rollback()
 				return nil, err
@@ -155,7 +155,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 		return nil, err
 	}
 	// 锁定支付池
-	err = data.LockTransaction(availableToken, order.TradeId, availableAmount, config.GetOrderExpirationTimeDuration())
+	err = data.LockTransaction(availableToken, order.TradeId, availableAmount, req.Currency, req.ChainType, config.GetOrderExpirationTimeDuration())
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -198,7 +198,7 @@ func OrderProcessing(req *request.OrderProcessingRequest) error {
 		return err
 	}
 	// 解锁交易
-	err = data.UnLockTransaction(req.Token, req.Amount)
+	err = data.UnLockTransaction(req.Token, req.Amount, req.Currency, req.ChainType)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -215,7 +215,7 @@ func CalculateAvailableWalletAndAmount(amount float64, walletAddress []mdb.Walle
 		availableWallet := ""
 		for _, address := range walletAddress {
 			token := address.Token
-			result, err := data.GetTradeIdByWalletAddressAndAmount(token, amount)
+			result, err := data.GetTradeIdByWalletAddressAndAmount(token, amount, address.Currency, address.ChainType)
 			if err != nil {
 				return "", err
 			}

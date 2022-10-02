@@ -26,28 +26,44 @@ func (r ListenTrc20Job) Run() {
 	}
 	var wg sync.WaitGroup
 	if len(service.Defs()) > 0 {
-		chr := service.Checker()
 		for _, address := range walletAddress {
 			wg.Add(1)
-			go func(token string) {
+			if len(address.Currency) == 0 {
+				address.Currency = service.DefaultCurrency
+			}
+			if len(address.ChainType) == 0 {
+				address.ChainType = service.DefaultChainType
+			}
+			go func(token string, currency string, chainType string) {
 				defer wg.Done()
 				defer func() {
 					if err := recover(); err != nil {
 						log.Sugar.Error(err)
 					}
 				}()
-				err := chr.Check(token)
+				chr := service.Checker(currency, chainType)
+				if chr == nil {
+					log.Sugar.Errorf(`unsupported checker for currency-chain: %s-%s`, currency, chainType)
+					return
+				}
+				err := chr.Check(token, currency, chainType)
 				if err != nil {
 					log.Sugar.Error(err)
 				}
-			}(address.Token)
+			}(address.Token, address.Currency, address.ChainType)
 		}
 		wg.Wait()
 		return
 	}
 	for _, address := range walletAddress {
 		wg.Add(1)
-		go service.Trc20CallBack(address.Token, &wg)
+		if len(address.Currency) == 0 {
+			address.Currency = service.DefaultCurrency
+		}
+		if len(address.ChainType) == 0 {
+			address.ChainType = service.DefaultChainType
+		}
+		go service.Trc20CallBack(address.Token, address.Currency, address.ChainType, &wg)
 	}
 	wg.Wait()
 }

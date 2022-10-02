@@ -86,9 +86,10 @@ func UpdateOrderIsExpirationById(id uint64) error {
 }
 
 // GetTradeIdByWalletAddressAndAmount 通过钱包地址，支付金额获取交易号
-func GetTradeIdByWalletAddressAndAmount(token string, amount float64) (string, error) {
+func GetTradeIdByWalletAddressAndAmount(token string, amount float64, currency string, chainType string) (string, error) {
 	ctx := context.Background()
 	cacheKey := fmt.Sprintf(CacheWalletAddressWithAmountToTradeIdKey, token, amount)
+	cacheKey += `_` + currency + `-` + chainType
 	result, err := dao.Rdb.Get(ctx, cacheKey).Result()
 	if err == redis.Nil {
 		return "", nil
@@ -100,17 +101,19 @@ func GetTradeIdByWalletAddressAndAmount(token string, amount float64) (string, e
 }
 
 // LockTransaction 锁定交易
-func LockTransaction(token, tradeId string, amount float64, expirationTime time.Duration) error {
+func LockTransaction(token, tradeId string, amount float64, currency string, chainType string, expirationTime time.Duration) error {
 	ctx := context.Background()
 	cacheKey := fmt.Sprintf(CacheWalletAddressWithAmountToTradeIdKey, token, amount)
+	cacheKey += `_` + currency + `-` + chainType
 	err := dao.Rdb.Set(ctx, cacheKey, tradeId, expirationTime).Err()
 	return err
 }
 
 // UnLockTransaction 解锁交易
-func UnLockTransaction(token string, amount float64) error {
+func UnLockTransaction(token string, amount float64, currency string, chainType string) error {
 	ctx := context.Background()
 	cacheKey := fmt.Sprintf(CacheWalletAddressWithAmountToTradeIdKey, token, amount)
+	cacheKey += `_` + currency + `-` + chainType
 	err := dao.Rdb.Del(ctx, cacheKey).Err()
 	return err
 }
