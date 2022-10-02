@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"strings"
 	"time"
 
 	"github.com/assimon/luuu/config"
@@ -29,9 +30,13 @@ func (c *BaseCommController) CreateTransaction(ctx echo.Context) (err error) {
 	}
 	if len(req.Currency) == 0 {
 		req.Currency = service.DefaultCurrency
+	} else {
+		req.Currency = strings.ToUpper(req.Currency)
 	}
 	if len(req.ChainType) == 0 {
 		req.ChainType = service.DefaultChainType
+	} else {
+		req.ChainType = strings.ToUpper(req.ChainType)
 	}
 	if err = config.CurrencyChains.Validate(req.Currency, req.ChainType); err != nil {
 		return c.FailJson(ctx, err)

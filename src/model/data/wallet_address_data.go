@@ -7,7 +7,7 @@ import (
 )
 
 // AddWalletAddress 创建钱包
-func AddWalletAddress(token string) (*mdb.WalletAddress, error) {
+func AddWalletAddress(token string, currency string, chainType string) (*mdb.WalletAddress, error) {
 	exist, err := GetWalletAddressByToken(token)
 	if err != nil {
 		return nil, err
@@ -16,8 +16,10 @@ func AddWalletAddress(token string) (*mdb.WalletAddress, error) {
 		return nil, constant.WalletAddressAlreadyExists
 	}
 	walletAddress := &mdb.WalletAddress{
-		Token:  token,
-		Status: mdb.TokenStatusEnable,
+		Token:     token,
+		Currency:  currency,
+		ChainType: chainType,
+		Status:    mdb.TokenStatusEnable,
 	}
 	err = dao.Mdb.Create(walletAddress).Error
 	return walletAddress, err

@@ -73,9 +73,13 @@ func initChecker() {
 	for _, def := range Defs() {
 		if len(def.Currency) == 0 {
 			def.Currency = DefaultCurrency
+		} else {
+			def.Currency = strings.ToUpper(def.Currency)
 		}
 		if len(def.ChainType) == 0 {
 			def.ChainType = DefaultChainType
+		} else {
+			def.ChainType = strings.ToUpper(def.ChainType)
 		}
 		key := def.Currency + `-` + def.ChainType
 		if _, ok := mapdefs[key]; !ok {

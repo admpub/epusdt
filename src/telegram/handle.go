@@ -2,6 +2,9 @@ package telegram
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/assimon/luuu/config"
 	"github.com/assimon/luuu/model/data"
 	"github.com/assimon/luuu/model/mdb"
 	"github.com/gookit/goutil/mathutil"
@@ -16,7 +19,24 @@ const (
 func OnTextMessageHandle(c tb.Context) error {
 	if c.Message().ReplyTo.Text == ReplayAddWallet {
 		defer bots.Delete(c.Message().ReplyTo)
-		_, err := data.AddWalletAddress(c.Message().Text)
+		msg := c.Message().Text
+		parts := strings.SplitN(msg, `:`, 2)
+		token := parts[0]
+		currency := `USDT`
+		chainType := `TRC20`
+		if len(parts) == 2 {
+			_parts := strings.SplitN(parts[1], `-`, 2)
+			if len(_parts[0]) > 0 {
+				currency = strings.ToUpper(_parts[0])
+			}
+			if len(_parts) == 2 {
+				chainType = strings.ToUpper(_parts[1])
+			}
+		}
+		if err := config.CurrencyChains.Validate(currency, chainType); err != nil {
+			return c.Send("不支持币种：" + fmt.Sprintf(`%s-%s`, currency, chainType))
+		}
+		_, err := data.AddWalletAddress(token, currency, chainType)
 		if err != nil {
 			return c.Send(err.Error())
 		}

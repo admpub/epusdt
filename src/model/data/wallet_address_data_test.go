@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAddWalletAddress(t *testing.T) {
-	w, err := AddWalletAddress(token)
+	w, err := AddWalletAddress(token, `USDT`, `TRC20`)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
