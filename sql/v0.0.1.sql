@@ -1,8 +1,7 @@
 -- auto-generated definition
 create table orders
 (
-    id                   int auto_increment
-        primary key,
+    id                   int auto_increment primary key,
     trade_id             varchar(32)    not null comment 'epusdt订单号',
     order_id             varchar(32)    not null comment '客户交易id',
     block_transaction_id varchar(128)   null comment '区块唯一编号',
@@ -17,10 +16,8 @@ create table orders
     created_at           timestamp      null,
     updated_at           timestamp      null,
     deleted_at           timestamp      null,
-    constraint orders_order_id_uindex
-        unique (order_id),
-    constraint orders_trade_id_uindex
-        unique (trade_id)
+    constraint orders_order_id_uindex unique (order_id),
+    constraint orders_trade_id_uindex unique (trade_id)
 );
 
 create index orders_block_transaction_id_index
@@ -29,10 +26,10 @@ create index orders_block_transaction_id_index
 -- auto-generated definition
 create table wallet_address
 (
-    id         int auto_increment
-        primary key,
+    id         int auto_increment primary key,
     token      varchar(50)   not null comment '钱包token',
     status     int default 1 not null comment '1:启用 2:禁用',
+    name      varchar(60)   not null default '' comment '钱包名',
     created_at timestamp     null,
     updated_at timestamp     null,
     deleted_at timestamp     null
