@@ -1,15 +1,17 @@
 package dao
 
 import (
+	"log"
+	"os"
+	"time"
+
 	"github.com/assimon/luuu/config"
-	"github.com/assimon/luuu/util/log"
 	"github.com/gookit/color"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"time"
 )
 
 var Mdb *gorm.DB
@@ -22,7 +24,12 @@ func MysqlInit() {
 			TablePrefix:   viper.GetString("mysql_table_prefix"),
 			SingularTable: true,
 		},
-		Logger: logger.Default.LogMode(logger.Error),
+		Logger: logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
+			SlowThreshold:             200 * time.Millisecond,
+			LogLevel:                  logger.Warn,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  false,
+		}),
 	})
 	if err != nil {
 		panic(err)
