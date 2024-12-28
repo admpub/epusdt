@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -83,6 +84,33 @@ func SaveCallBackOrdersResp(order *mdb.Orders) error {
 func UpdateOrderIsExpirationById(id uint64) error {
 	err := dao.Mdb.Model(mdb.Orders{}).Where("id = ?", id).Update("status", mdb.StatusExpired).Error
 	return err
+}
+
+// ExistsOrderIsWaitPay 查询是否存在待支付订单
+func ExistsOrderIsWaitPay() (bool, error) {
+	order := new(mdb.Orders)
+	err := dao.Mdb.Model(order).Select("id").Take(order, "status = ?", mdb.StatusWaitPay).Error
+	if err == nil {
+		return order.ID > 0, err
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	return false, err
+}
+
+// GetTokenIsWaitPay 查询待支付订单token
+func GetTokenIsWaitPay(token []string) ([]string, error) {
+	orders := []*mdb.Orders{}
+	err := dao.Mdb.Model(orders).Select("token").Group("token").Find(orders, "status = ? AND token IN ?", mdb.StatusWaitPay, token).Error
+	if err != nil {
+		return nil, err
+	}
+	found := make([]string, len(orders))
+	for i, v := range orders {
+		found[i] = v.Token
+	}
+	return found, err
 }
 
 // GetTradeIdByWalletAddressAndAmount 通过钱包地址，支付金额获取交易号

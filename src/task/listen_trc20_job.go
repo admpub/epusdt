@@ -11,11 +11,7 @@ import (
 type ListenTrc20Job struct {
 }
 
-var gListenTrc20JobLock sync.Mutex
-
 func (r ListenTrc20Job) Run() {
-	gListenTrc20JobLock.Lock()
-	defer gListenTrc20JobLock.Unlock()
 	walletAddress, err := data.GetAvailableWalletAddress()
 	if err != nil {
 		log.Sugar.Error(err)
@@ -24,10 +20,22 @@ func (r ListenTrc20Job) Run() {
 	if len(walletAddress) <= 0 {
 		return
 	}
+	tokens := make([]string, len(walletAddress))
+	for i, v := range walletAddress {
+		tokens[i] = v.Token
+	}
+	tokens, err = data.GetTokenIsWaitPay(tokens)
+	if err != nil {
+		log.Sugar.Error(err)
+		return
+	}
+	if len(tokens) == 0 {
+		return
+	}
 	var wg sync.WaitGroup
 	if len(service.Defs()) > 0 {
 		chr := service.Checker()
-		for _, address := range walletAddress {
+		for _, token := range tokens {
 			wg.Add(1)
 			go func(token string) {
 				defer wg.Done()
@@ -40,14 +48,14 @@ func (r ListenTrc20Job) Run() {
 				if err != nil {
 					log.Sugar.Error(err)
 				}
-			}(address.Token)
+			}(token)
 		}
 		wg.Wait()
 		return
 	}
-	for _, address := range walletAddress {
+	for _, token := range tokens {
 		wg.Add(1)
-		go service.Trc20CallBack(address.Token, &wg)
+		go service.Trc20CallBack(token, &wg)
 	}
 	wg.Wait()
 }

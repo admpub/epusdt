@@ -3,6 +3,7 @@ package comm
 import (
 	"time"
 
+	"github.com/assimon/luuu/config"
 	"github.com/assimon/luuu/model/request"
 	"github.com/assimon/luuu/model/response"
 	"github.com/assimon/luuu/model/service"
@@ -11,7 +12,7 @@ import (
 )
 
 func isTimestampExpired(ts int64) bool {
-	return time.Now().After(time.Unix(ts, 0).Add(time.Minute * 10))
+	return time.Now().After(time.Unix(ts, 0).Add(config.GetOrderExpirationTimeDuration()))
 }
 
 // CreateTransaction 创建交易
