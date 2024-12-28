@@ -2,10 +2,10 @@ package telegram
 
 import (
 	"fmt"
+
 	"github.com/assimon/luuu/model/data"
 	"github.com/assimon/luuu/model/mdb"
-	"github.com/gookit/goutil/mathutil"
-	"github.com/gookit/goutil/strutil"
+	"github.com/webx-top/com"
 	tb "gopkg.in/telebot.v3"
 )
 
@@ -41,7 +41,7 @@ func WalletList(c tb.Context) error {
 		btnInfo := tb.InlineButton{
 			Unique: wallet.Token,
 			Text:   fmt.Sprintf("%s[%s]", wallet.Token, status),
-			Data:   strutil.MustString(wallet.ID),
+			Data:   com.String(wallet.ID),
 		}
 		bots.Handle(&btnInfo, WalletInfo)
 		btnList = append(btnList, append(temp, btnInfo))
@@ -59,7 +59,7 @@ func WalletList(c tb.Context) error {
 }
 
 func WalletInfo(c tb.Context) error {
-	id := mathutil.MustUint(c.Data())
+	id := com.Uint64(c.Data())
 	tokenInfo, err := data.GetWalletAddressById(id)
 	if err != nil {
 		return c.Send(err.Error())
@@ -100,7 +100,7 @@ func WalletInfo(c tb.Context) error {
 }
 
 func EnableWallet(c tb.Context) error {
-	id := mathutil.MustUint(c.Data())
+	id := com.Uint64(c.Data())
 	if id <= 0 {
 		return c.Send("请求不合法！")
 	}
@@ -112,7 +112,7 @@ func EnableWallet(c tb.Context) error {
 }
 
 func DisableWallet(c tb.Context) error {
-	id := mathutil.MustUint(c.Data())
+	id := com.Uint64(c.Data())
 	if id <= 0 {
 		return c.Send("请求不合法！")
 	}
@@ -124,7 +124,7 @@ func DisableWallet(c tb.Context) error {
 }
 
 func DelWallet(c tb.Context) error {
-	id := mathutil.MustUint(c.Data())
+	id := com.Uint64(c.Data())
 	if id <= 0 {
 		return c.Send("请求不合法！")
 	}

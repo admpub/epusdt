@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/assimon/luuu/util/json"
-	"github.com/gookit/goutil/strutil"
+	"github.com/webx-top/com"
 )
 
 // Get 获取签名
@@ -28,7 +28,7 @@ func Get(data interface{}, bizKey string) (string, error) {
 	default:
 		return "", errors.New("type err")
 	}
-	sign := strutil.Md5(signStr + bizKey)
+	sign := com.Md5(signStr + bizKey)
 	return sign, nil
 }
 

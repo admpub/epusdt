@@ -13,10 +13,10 @@ import (
 	"github.com/assimon/luuu/util/http_client"
 	"github.com/assimon/luuu/util/json"
 	"github.com/assimon/luuu/util/log"
-	"github.com/golang-module/carbon/v2"
-	"github.com/gookit/goutil/stdutil"
+	"github.com/dromara/carbon/v2"
 	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
+	"github.com/webx-top/com"
 )
 
 const UsdtTrc20ApiUri = "https://apilist.tronscanapi.com/api/transfer/trc20"
@@ -71,8 +71,8 @@ func Trc20CallBack(token string, wg *sync.WaitGroup) {
 		}
 	}()
 	client := http_client.GetHttpClient()
-	startTime := carbon.Now().AddHours(-24).TimestampWithMillisecond()
-	endTime := carbon.Now().TimestampWithMillisecond()
+	startTime := carbon.Now().AddHours(-24).TimestampMilli()
+	endTime := carbon.Now().TimestampMilli()
 	resp, err := client.R().SetQueryParams(map[string]string{
 		"sort":            "-timestamp",
 		"limit":           "50",
@@ -81,8 +81,8 @@ func Trc20CallBack(token string, wg *sync.WaitGroup) {
 		"db_version":      "1",
 		"trc20Id":         Trc20ContractAddress,
 		"address":         token,
-		"start_timestamp": stdutil.ToString(startTime),
-		"end_timestamp":   stdutil.ToString(endTime),
+		"start_timestamp": com.String(startTime),
+		"end_timestamp":   com.String(endTime),
 	}).Get(UsdtTrc20ApiUri)
 	if err != nil {
 		panic(err)
@@ -120,7 +120,7 @@ func Trc20CallBack(token string, wg *sync.WaitGroup) {
 			panic(err)
 		}
 		// 区块的确认时间必须在订单创建时间之后
-		createTime := order.CreatedAt.TimestampWithMillisecond()
+		createTime := order.CreatedAt.TimestampMilli()
 		if transfer.BlockTimestamp < createTime {
 			panic("Orders cannot actually be matched")
 		}

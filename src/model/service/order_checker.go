@@ -16,11 +16,11 @@ import (
 	"github.com/assimon/luuu/telegram"
 	"github.com/assimon/luuu/util/http_client"
 	"github.com/assimon/luuu/util/json"
+	"github.com/dromara/carbon/v2"
 	"github.com/go-resty/resty/v2"
-	"github.com/golang-module/carbon/v2"
-	"github.com/gookit/goutil/stdutil"
 	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
+	"github.com/webx-top/com"
 	"github.com/webx-top/echo/param"
 	"gopkg.in/yaml.v3"
 )
@@ -138,8 +138,8 @@ type defaultCheck struct {
 }
 
 func (d *defaultCheck) Check(token string) (err error) {
-	startTime := carbon.Now().AddHours(-24).TimestampWithMillisecond()
-	endTime := carbon.Now().TimestampWithMillisecond()
+	startTime := carbon.Now().AddHours(-24).TimestampMilli()
+	endTime := carbon.Now().TimestampMilli()
 	for _, def := range d.defs {
 		err = d.check(def, token, startTime, endTime)
 		if err == nil {
@@ -166,9 +166,9 @@ func (d *defaultCheck) query(def *OrderCheckerDef, token string, startTime int64
 		case `{token}`:
 			v = token
 		case `{startTime}`:
-			v = stdutil.ToString(startTime)
+			v = com.String(startTime)
 		case `{endTime}`:
-			v = stdutil.ToString(endTime)
+			v = com.String(endTime)
 		}
 		queryParams[k] = v
 	}
@@ -241,7 +241,7 @@ func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64
 			return err
 		}
 		// 区块的确认时间必须在订单创建时间之后
-		createTime := order.CreatedAt.TimestampWithMillisecond()
+		createTime := order.CreatedAt.TimestampMilli()
 		if result.Timestamp < createTime {
 			result.Release()
 			return ErrMismathedOrderTime

@@ -4,15 +4,15 @@ import (
 	"testing"
 
 	"github.com/admpub/pp"
-	"github.com/golang-module/carbon/v2"
+	"github.com/dromara/carbon/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCheck(t *testing.T) {
 	SetDefs([]*OrderCheckerDef{NewTronscanapiDef()})
 	c := NewDefaultCheck(Defs())
-	startTime := carbon.Now().AddHours(-24).TimestampWithMillisecond()
-	endTime := carbon.Now().TimestampWithMillisecond()
+	startTime := carbon.Now().AddHours(-24).TimestampMilli()
+	endTime := carbon.Now().TimestampMilli()
 	def := Defs()[0]
 	rows, err := c.query(def, `TVAz5k5NHtAXGwgKVjkX9xfiQuH8uiRs3q`, startTime, endTime)
 	assert.NoError(t, err)
