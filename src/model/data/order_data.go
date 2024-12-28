@@ -102,7 +102,7 @@ func ExistsOrderIsWaitPay() (bool, error) {
 // GetTokenIsWaitPay 查询待支付订单token
 func GetTokenIsWaitPay(token []string) ([]string, error) {
 	orders := []*mdb.Orders{}
-	err := dao.Mdb.Model(orders).Select("token").Group("token").Find(orders, "status = ? AND token IN ?", mdb.StatusWaitPay, token).Error
+	err := dao.Mdb.Model(orders).Select("token").Group("token").Find(&orders, "status = ? AND token IN ?", mdb.StatusWaitPay, token).Error
 	if err != nil {
 		return nil, err
 	}
