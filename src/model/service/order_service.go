@@ -98,7 +98,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 				`token`:            exist.Token,
 				`notify_url`:       exist.NotifyUrl,
 				`redirect_url`:     exist.RedirectUrl,
-				`created_at`:       exist.CreatedAt,
+				`created_at`:       exist.CreatedAt.StdTime(),
 				"status":           exist.Status,
 				"callback_num":     exist.CallbackNum,
 				"callback_confirm": exist.CallBackConfirm,

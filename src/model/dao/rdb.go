@@ -39,6 +39,6 @@ func RedisInit() {
 		color.Red.Printf("[store_redis] redis connRdb err,err=%s", err)
 		panic(err)
 	} else {
-		log.Sugar.Debug("[store_redis] redis connRdb success,suc=%s", pong)
+		log.Sugar.Debugf("[store_redis] redis connRdb success,suc=%s", pong)
 	}
 }
