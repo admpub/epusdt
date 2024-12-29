@@ -3,11 +3,12 @@ package dao
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/assimon/luuu/util/log"
 	"github.com/go-redis/redis/v8"
 	"github.com/gookit/color"
 	"github.com/spf13/viper"
-	"time"
 )
 
 var Rdb *redis.Client
@@ -22,9 +23,11 @@ func RedisInit() {
 		PoolSize:    viper.GetInt("redis_pool_size"),                                 // Redis连接池大小
 		MaxRetries:  viper.GetInt("redis_max_retries"),                               // 最大重试次数
 		IdleTimeout: time.Second * time.Duration(viper.GetInt("redis_idle_timeout")), // 空闲链接超时时间
+		Password:    viper.GetString("redis_passwd"),
 	}
-	if viper.GetString("redis_passwd") != "" {
-		options.Password = viper.GetString("redis_passwd")
+	readTimeout := viper.GetInt64("redis_read_timeout")
+	if readTimeout > 0 {
+		options.ReadTimeout = time.Second * time.Duration(readTimeout)
 	}
 	Rdb = redis.NewClient(&options)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

@@ -2,6 +2,8 @@ package mq
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/assimon/luuu/mq/handle"
 	"github.com/assimon/luuu/util/log"
 	"github.com/hibiken/asynq"
@@ -18,6 +20,10 @@ func Start() {
 			viper.GetString("redis_port")),
 		DB:       viper.GetInt("redis_db"),
 		Password: viper.GetString("redis_passwd"),
+	}
+	readTimeout := viper.GetInt64("redis_read_timeout")
+	if readTimeout > 0 {
+		redis.ReadTimeout = time.Second * time.Duration(readTimeout)
 	}
 	initClient(redis)
 	go initListen(redis)
