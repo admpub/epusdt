@@ -15,6 +15,7 @@ import (
 	"github.com/assimon/luuu/mq"
 	"github.com/assimon/luuu/mq/handle"
 	"github.com/assimon/luuu/util/constant"
+	"github.com/assimon/luuu/util/log"
 	"github.com/assimon/luuu/util/math"
 	"github.com/dromara/carbon/v2"
 	"github.com/hibiken/asynq"
@@ -56,7 +57,14 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 	if exist.ID > 0 {
 		switch exist.Status {
 		case mdb.StatusWaitPay:
-			return respCreateTransaction(exist), nil
+			if exist.CreatedAt.StdTime().After(time.Now().Add(-config.GetOrderExpirationTimeDuration())) {
+				return respCreateTransaction(exist), nil
+			}
+			exist.Status = mdb.StatusExpired
+			if err = data.UpdateOrderIsExpirationById(exist.ID); err != nil {
+				log.Sugar.Error(err)
+			}
+			fallthrough
 		case mdb.StatusExpired:
 			// 有无可用钱包
 			walletAddress, err := data.GetAvailableWalletAddress()

@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 
 	"github.com/assimon/luuu/config"
 	"github.com/assimon/luuu/util/constant"
@@ -14,7 +14,7 @@ import (
 func CheckApiSign() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
-			params, err := ioutil.ReadAll(ctx.Request().Body)
+			params, err := io.ReadAll(ctx.Request().Body)
 			if err != nil {
 				return constant.SignatureErr
 			}
@@ -34,7 +34,7 @@ func CheckApiSign() echo.MiddlewareFunc {
 			if checkSignature != signature {
 				return constant.SignatureErr
 			}
-			ctx.Request().Body = ioutil.NopCloser(bytes.NewBuffer(params))
+			ctx.Request().Body = io.NopCloser(bytes.NewBuffer(params))
 			return next(ctx)
 		}
 	}

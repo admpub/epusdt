@@ -82,7 +82,7 @@ func SaveCallBackOrdersResp(order *mdb.Orders) error {
 
 // UpdateOrderIsExpirationById 通过id设置订单过期
 func UpdateOrderIsExpirationById(id uint64) error {
-	err := dao.Mdb.Model(mdb.Orders{}).Where("id = ?", id).Update("status", mdb.StatusExpired).Error
+	err := dao.Mdb.Model(mdb.Orders{}).Where("id = ? AND status = ?", id, mdb.StatusWaitPay).Update("status", mdb.StatusExpired).Error
 	return err
 }
 
