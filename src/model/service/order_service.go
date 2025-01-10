@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -17,7 +18,6 @@ import (
 	"github.com/assimon/luuu/util/constant"
 	"github.com/assimon/luuu/util/log"
 	"github.com/assimon/luuu/util/math"
-	"github.com/dromara/carbon/v2"
 	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
 )
@@ -57,7 +57,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 	if exist.ID > 0 {
 		switch exist.Status {
 		case mdb.StatusWaitPay:
-			if exist.CreatedAt.StdTime().After(time.Now().Add(-config.GetOrderExpirationTimeDuration())) {
+			if exist.CreatedAt.Time.After(time.Now().Add(-config.GetOrderExpirationTimeDuration())) {
 				return respCreateTransaction(exist), nil
 			}
 			exist.Status = mdb.StatusExpired
@@ -88,7 +88,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 			exist.Token = availableToken
 			exist.NotifyUrl = req.NotifyUrl
 			exist.RedirectUrl = req.RedirectUrl
-			exist.CreatedAt = carbon.NewDateTimeMilli(carbon.Now())
+			exist.CreatedAt = sql.NullTime{Time: time.Now(), Valid: true}
 			exist.Status = mdb.StatusWaitPay
 			exist.CallbackNum = 0
 			exist.CallBackConfirm = mdb.CallBackConfirmNo
@@ -98,7 +98,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 				`token`:            exist.Token,
 				`notify_url`:       exist.NotifyUrl,
 				`redirect_url`:     exist.RedirectUrl,
-				`created_at`:       exist.CreatedAt.StdTime(),
+				`created_at`:       exist.CreatedAt.Time,
 				"status":           exist.Status,
 				"callback_num":     exist.CallbackNum,
 				"callback_confirm": exist.CallBackConfirm,
@@ -149,6 +149,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 		NotifyUrl:    req.NotifyUrl,
 		RedirectUrl:  req.RedirectUrl,
 	}
+	order.CreatedAt = sql.NullTime{Time: time.Now(), Valid: true}
 	err = data.CreateOrderWithTransaction(tx, order)
 	if err != nil {
 		tx.Rollback()
@@ -168,7 +169,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 }
 
 func respCreateTransaction(order *mdb.Orders) *response.CreateTransactionResponse {
-	expirationTime := order.CreatedAt.AddMinutes(config.GetOrderExpirationTime()).Timestamp()
+	expirationTime := order.CreatedAt.Time.Add(config.GetOrderExpirationTimeDuration()).UnixMilli()
 	return &response.CreateTransactionResponse{
 		TradeId:        order.TradeId,
 		OrderId:        order.OrderId,

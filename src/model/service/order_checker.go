@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/assimon/luuu/config"
 	"github.com/assimon/luuu/model/data"
@@ -16,7 +17,6 @@ import (
 	"github.com/assimon/luuu/telegram"
 	"github.com/assimon/luuu/util/http_client"
 	"github.com/assimon/luuu/util/json"
-	"github.com/dromara/carbon/v2"
 	"github.com/go-resty/resty/v2"
 	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
@@ -138,8 +138,8 @@ type defaultCheck struct {
 }
 
 func (d *defaultCheck) Check(token string) (err error) {
-	startTime := carbon.Now().AddHours(-24).TimestampMilli()
-	endTime := carbon.Now().TimestampMilli()
+	startTime := time.Now().Add(-24 * time.Hour).UnixMilli()
+	endTime := time.Now().UnixMilli()
 	for _, def := range d.defs {
 		err = d.check(def, token, startTime, endTime)
 		if err == nil {
@@ -241,7 +241,7 @@ func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64
 			return err
 		}
 		// 区块的确认时间必须在订单创建时间之后
-		createTime := order.CreatedAt.TimestampMilli()
+		createTime := order.CreatedAt.Time.UnixMilli()
 		if result.Timestamp < createTime {
 			result.Release()
 			return ErrMismathedOrderTime
@@ -272,7 +272,7 @@ func (d *defaultCheck) check(def *OrderCheckerDef, token string, startTime int64
 <pre>订单创建时间：%s</pre>
 <pre>支付成功时间：%s</pre>
 `
-		msg := fmt.Sprintf(msgTpl, order.TradeId, order.OrderId, order.Amount, order.ActualAmount, order.Token, order.CreatedAt.ToDateTimeString(), carbon.Now().ToDateTimeString())
+		msg := fmt.Sprintf(msgTpl, order.TradeId, order.OrderId, order.Amount, order.ActualAmount, order.Token, order.CreatedAt.Time.Format(time.DateTime), time.Now().Format(time.DateTime))
 		telegram.SendToBot(msg)
 		result.Release()
 	}

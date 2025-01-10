@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/assimon/luuu/model/data"
 	"github.com/assimon/luuu/model/request"
@@ -13,7 +14,6 @@ import (
 	"github.com/assimon/luuu/util/http_client"
 	"github.com/assimon/luuu/util/json"
 	"github.com/assimon/luuu/util/log"
-	"github.com/dromara/carbon/v2"
 	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
 	"github.com/webx-top/com"
@@ -71,8 +71,8 @@ func Trc20CallBack(token string, wg *sync.WaitGroup) {
 		}
 	}()
 	client := http_client.GetHttpClient()
-	startTime := carbon.Now().AddHours(-24).TimestampMilli()
-	endTime := carbon.Now().TimestampMilli()
+	startTime := time.Now().Add(-24 * time.Hour).UnixMilli()
+	endTime := time.Now().UnixMilli()
 	resp, err := client.R().SetQueryParams(map[string]string{
 		"sort":            "-timestamp",
 		"limit":           "50",
@@ -120,7 +120,7 @@ func Trc20CallBack(token string, wg *sync.WaitGroup) {
 			panic(err)
 		}
 		// 区块的确认时间必须在订单创建时间之后
-		createTime := order.CreatedAt.TimestampMilli()
+		createTime := order.CreatedAt.Time.UnixMilli()
 		if transfer.BlockTimestamp < createTime {
 			panic("Orders cannot actually be matched")
 		}
@@ -149,7 +149,7 @@ func Trc20CallBack(token string, wg *sync.WaitGroup) {
 <pre>订单创建时间：%s</pre>
 <pre>支付成功时间：%s</pre>
 `
-		msg := fmt.Sprintf(msgTpl, order.TradeId, order.OrderId, order.Amount, order.ActualAmount, order.Token, order.CreatedAt.ToDateTimeString(), carbon.Now().ToDateTimeString())
+		msg := fmt.Sprintf(msgTpl, order.TradeId, order.OrderId, order.Amount, order.ActualAmount, order.Token, order.CreatedAt.Time.Format(time.DateTime), time.Now().Format(time.DateTime))
 		telegram.SendToBot(msg)
 	}
 }

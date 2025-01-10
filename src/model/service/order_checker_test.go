@@ -2,17 +2,17 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	"github.com/admpub/pp"
-	"github.com/dromara/carbon/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCheck(t *testing.T) {
 	SetDefs([]*OrderCheckerDef{NewTronscanapiDef()})
 	c := NewDefaultCheck(Defs())
-	startTime := carbon.Now().AddHours(-24).TimestampMilli()
-	endTime := carbon.Now().TimestampMilli()
+	startTime := time.Now().Add(-24 * time.Hour).UnixMilli()
+	endTime := time.Now().UnixMilli()
 	def := Defs()[0]
 	rows, err := c.query(def, `TVAz5k5NHtAXGwgKVjkX9xfiQuH8uiRs3q`, startTime, endTime)
 	assert.NoError(t, err)
