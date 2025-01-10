@@ -88,7 +88,7 @@ func CreateTransaction(req *request.CreateTransactionRequest) (*response.CreateT
 			exist.Token = availableToken
 			exist.NotifyUrl = req.NotifyUrl
 			exist.RedirectUrl = req.RedirectUrl
-			exist.CreatedAt = carbon.NewTimestampMilli(carbon.Now())
+			exist.CreatedAt = carbon.NewDateTimeMilli(carbon.Now())
 			exist.Status = mdb.StatusWaitPay
 			exist.CallbackNum = 0
 			exist.CallBackConfirm = mdb.CallBackConfirmNo
