@@ -4,7 +4,6 @@ go 1.23
 
 require (
 	github.com/admpub/pp v0.0.7
-	github.com/dromara/carbon/v2 v2.5.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.16.3
 	github.com/gookit/color v1.5.4
