@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -47,8 +48,8 @@ func Init() {
 		RuntimePath,
 		viper.GetString("log_save_path"))
 	MysqlDns = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		viper.GetString("mysql_user"),
-		viper.GetString("mysql_passwd"),
+		url.QueryEscape(viper.GetString("mysql_user")),
+		url.QueryEscape(viper.GetString("mysql_passwd")),
 		fmt.Sprintf(
 			"%s:%s",
 			viper.GetString("mysql_host"),
@@ -97,7 +98,7 @@ func GetAppVersion() string {
 
 func GetAppName() string {
 	appName := viper.GetString("app_name")
-	if appName == "" {
+	if len(appName) == 0 {
 		return "epusdt"
 	}
 	return appName
